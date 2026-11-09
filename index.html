@@ -1,0 +1,847 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>펭이 다이어리</title>
+<meta name="theme-color" content="#fde2ed">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="펭이 다이어리">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+</head>
+<body>
+<style>
+@font-face { font-family: "Jua"; src: url("fonts/Jua-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Gaegu"; src: url("fonts/Gaegu-Regular.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Gaegu"; src: url("fonts/Gaegu-Bold.woff2") format("woff2"); font-weight: 700; font-display: swap; }
+/* Layout: one diary column — date header, 펭이 + bubble, today's page (mood·weather·title·lined body), 펭이's reply, month calendar */
+:root {
+  --bg: #e3f5ee;
+  --paper: #ffffff;
+  --ink: #1b2a3a;
+  --muted: #627285;
+  --line: #d6dee7;
+  --rule: #cfe6f2;
+  --margin: #f3b8b0;
+  --mint-deep: #0e8a6e;
+  --mint: #4bbf9f;
+  --accent: #2f6bd8;
+  --accent-soft: #dfe9fb;
+  --done: #1fa98a;
+  --done-soft: #d2f1e7;
+  --add: #138a70;
+  --reply-bg: #eef7ff;
+  --danger: #c2413b;
+  --pink: #d63a7e;
+  --pink-soft: #fde3ee;
+  --amber: #b25f0c;
+  --amber-soft: #fdecd8;
+  --f-ui: "Jua", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --f-hand: "Gaegu", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1d1a; --paper: #19222e; --ink: #e6edf5; --muted: #93a2b4; --line: #2a3644;
+    --rule: #26384a; --margin: #7a4440;
+    --mint-deep: #22a383; --mint: #1c6b5a; --accent: #6f9cf0; --accent-soft: #22324c;
+    --done: #4fd1b0; --done-soft: #173a33; --add: #179779; --reply-bg: #1b2a3c; --danger: #ec7a73; --pink: #f58fbb; --pink-soft: #3d2231; --amber: #f2a960; --amber-soft: #3a2a18;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1d1a; --paper: #19222e; --ink: #e6edf5; --muted: #93a2b4; --line: #2a3644;
+  --rule: #26384a; --margin: #7a4440;
+  --mint-deep: #22a383; --mint: #1c6b5a; --accent: #6f9cf0; --accent-soft: #22324c;
+  --done: #4fd1b0; --done-soft: #173a33; --add: #179779; --reply-bg: #1b2a3c; --danger: #ec7a73; --pink: #f58fbb; --pink-soft: #3d2231; --amber: #f2a960; --amber-soft: #3a2a18;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+:root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+html, body { margin: 0; }
+[hidden] { display: none !important; }
+img { max-width: 100%; }
+.backup { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.backup .btn { font-family: var(--f-ui); }
+.backup-msg { font-size: 12px; color: var(--muted); text-align: center; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-ui); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 580px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.datebox { min-width: 0; }
+.eyebrow { font-size: 12px; letter-spacing: .08em; color: var(--muted); }
+h1 { font-weight: 400; font-size: 34px; line-height: 1.15; margin: 2px 0 0; text-wrap: balance; }
+.nav { display: flex; gap: 6px; flex-shrink: 0; }
+.nav button { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); font-size: 16px; }
+.nav button:disabled { opacity: .35; cursor: default; }
+.nav .today { width: auto; padding: 0 12px; font-size: 13px; font-weight: 700; }
+
+/* 펭이 */
+.cheer { display: flex; align-items: center; gap: 12px; }
+.pup { position: relative; width: 100px; height: 100px; flex-shrink: 0; }
+.pup .peng { width: 100%; height: 100%; display: block; }
+/* resting: flat turnout. Tapping 펭이 plays once: rise onto pointe -> lift a leg -> back on pointe -> down to flat */
+button.pup { border: 0; background: none; padding: 0; cursor: pointer; border-radius: 16px; }
+.pup .peng.up, .pup .peng.lift { position: absolute; inset: 0; opacity: 0; }
+.pup.play .peng.flat { animation: p-flat 5.5s ease-in-out; }
+.pup.play .peng.up { animation: p-up 5.5s ease-in-out; }
+.pup.play .peng.lift { animation: p-lift 5.5s ease-in-out; }
+@keyframes p-flat { 0%, 8% { opacity: 1; } 16%, 84% { opacity: 0; } 92%, 100% { opacity: 1; } }
+@keyframes p-up { 0%, 8% { opacity: 0; } 16%, 28% { opacity: 1; } 36%, 64% { opacity: 0; } 72%, 84% { opacity: 1; } 92%, 100% { opacity: 0; } }
+@keyframes p-lift { 0%, 28% { opacity: 0; } 36%, 64% { opacity: 1; } 72%, 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .pup.play .peng { animation-duration: 5.5s; animation-timing-function: step-end; } }
+.bubble { position: relative; flex: 1; font-family: var(--f-hand); font-size: 19px !important; line-height: 1.4; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; padding: 10px 14px; font-size: 15px; min-width: 0; overflow-wrap: anywhere; }
+.bubble::before { content: ""; position: absolute; left: -7px; top: 50%; width: 12px; height: 12px; background: var(--paper); border-left: 1px solid var(--line); border-bottom: 1px solid var(--line); transform: translateY(-50%) rotate(45deg); }
+.bubble .q { display: block; font-family: var(--f-ui); font-size: 11px; letter-spacing: .08em; color: var(--mint-deep); margin-bottom: 2px; }
+
+/* diary page */
+.card { background: var(--paper); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.card-head { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); gap: 10px; }
+.label { font-size: 12px; font-weight: 700; letter-spacing: .08em; color: var(--muted); }
+.saved { font-size: 12px; color: var(--muted); white-space: nowrap; }
+.picks { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.pick-row { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pick-row > .label { width: 40px; flex-shrink: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; min-width: 0; }
+.chip { border: 1px solid transparent; background: none; border-radius: 10px; width: 40px; height: 40px; font-size: 22px; line-height: 1; display: grid; place-items: center; transition: transform .12s; }
+.chip:hover { background: var(--bg); }
+.chip.face { width: 46px; height: 46px; padding: 2px; }
+.chip.face img { width: 100%; height: 100%; display: block; }
+.cell .m img { width: 22px; height: 22px; display: block; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.chip[aria-pressed="true"].pop { animation: pop .35s ease; }
+@keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .chip.pop { animation: none !important; } }
+.pick-name { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+.page { position: relative; padding: 4px 14px 6px 34px; }
+.page::before { content: ""; position: absolute; top: 0; bottom: 0; left: 22px; border-left: 2px solid var(--margin); }
+#title { width: 100%; border: 0; background: none; color: var(--ink); font-family: var(--f-hand); font-weight: 700; font-size: 24px; padding: 12px 0 6px; border-bottom: 1px solid var(--rule); }
+#title::placeholder, #body::placeholder { color: var(--muted); opacity: .8; }
+#body {
+  display: block; width: 100%; min-height: 270px; resize: vertical; border: 0; color: var(--ink);
+  font-family: var(--f-hand); font-size: 21px; line-height: 32px; padding: 0; margin-top: 2px;
+  background-color: transparent;
+  background-image: repeating-linear-gradient(to bottom, transparent 0, transparent 31px, var(--rule) 31px, var(--rule) 32px);
+  background-attachment: local;
+}
+#title:focus-visible, #body:focus-visible { outline: none; }
+.foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 10px 14px; border-top: 1px solid var(--line); background: var(--bg); }
+.count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.foot-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn { border: 1px solid var(--line); background: var(--paper); border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 700; }
+.btn.primary { background: var(--add); border-color: var(--add); color: #fff; }
+.btn:disabled { opacity: .45; cursor: default; }
+.btn.danger { color: var(--danger); }
+.confirm { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 14px; background: var(--done-soft); font-size: 13px; }
+.confirm span { flex: 1; min-width: 160px; }
+
+/* 펭이's reply */
+.reply { display: flex; gap: 12px; align-items: flex-start; padding: 14px; background: var(--reply-bg); }
+.reply .peng { width: 48px; height: 48px; flex-shrink: 0; }
+.reply-body { min-width: 0; flex: 1; }
+.reply-from { font-size: 12px; font-weight: 700; color: var(--accent); letter-spacing: .04em; }
+.reply-text { font-family: var(--f-hand); font-size: 19px; line-height: 1.7; white-space: pre-wrap; overflow-wrap: anywhere; margin-top: 2px; }
+.reply-note { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+/* schedule */
+.ev-list { list-style: none; margin: 0; padding: 0; }
+.ev-list li { display: flex; align-items: center; gap: 10px; padding: 0 8px 0 14px; min-height: 48px; border-bottom: 1px solid var(--line); }
+.ev-time { flex-shrink: 0; min-width: 54px; text-align: center; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 3px 6px; }
+.ev-time.none { color: var(--muted); background: var(--bg); }
+.ev-text { flex: 1; min-width: 0; overflow-wrap: anywhere; font-family: var(--f-hand); font-size: 19px; padding: 10px 0; }
+.ev-del { flex-shrink: 0; width: 32px; height: 32px; border: 0; background: none; color: var(--muted); border-radius: 8px; font-size: 18px; line-height: 1; }
+.ev-del:hover { color: var(--danger); background: var(--bg); }
+.ev-empty { padding: 14px; color: var(--muted); font-size: 13px; border-bottom: 1px solid var(--line); }
+form.ev-add { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px; background: var(--bg); }
+form.ev-add input { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; min-width: 0; }
+form.ev-add #evTime { width: 118px; flex-shrink: 0; font-variant-numeric: tabular-nums; }
+form.ev-add #evText { flex: 1 1 160px; font-family: var(--f-hand); font-size: 18px; }
+form.ev-add button { border: 0; background: var(--accent); color: #fff; border-radius: 10px; padding: 0 16px; min-height: 42px; font-family: var(--f-ui); }
+.future-note { padding: 14px; font-size: 13px; color: var(--muted); }
+
+/* spending */
+.sp-total { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.sp-list { list-style: none; margin: 0; padding: 0; }
+.sp-list li { display: flex; align-items: center; gap: 10px; padding: 0 8px 0 14px; min-height: 48px; border-bottom: 1px solid var(--line); }
+.sp-cat { flex-shrink: 0; min-width: 52px; text-align: center; border-radius: 8px; padding: 3px 6px; font-size: 12px; color: var(--pink); background: var(--pink-soft); }
+.sp-cat.home, .spd.home { color: var(--amber); background: var(--amber-soft); }
+.sp-type { display: flex; flex: 0 0 auto; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--paper); }
+.sp-type button { border: 0; background: none; padding: 0 12px; min-height: 40px; font-family: var(--f-ui); color: var(--muted); }
+.sp-type button[aria-pressed="true"].mine { background: var(--pink); color: #fff; }
+.sp-type button[aria-pressed="true"].home { background: var(--amber); color: #fff; }
+.sp-text { flex: 1; min-width: 0; overflow-wrap: anywhere; font-family: var(--f-hand); font-size: 19px; padding: 10px 0; }
+.sp-amt { flex-shrink: 0; font-size: 14px; font-variant-numeric: tabular-nums; color: var(--ink); }
+form.sp-add { display: flex; gap: 8px; flex-wrap: wrap; padding: 10px; background: var(--bg); }
+form.sp-add select, form.sp-add input { font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px; min-width: 0; }
+form.sp-add #spText { flex: 1 1 140px; font-family: var(--f-hand); font-size: 18px; }
+form.sp-add #spAmt { flex: 0 1 120px; width: 120px; text-align: right; font-variant-numeric: tabular-nums; }
+form.sp-add > button { border: 0; background: var(--ink); color: var(--paper); border-radius: 10px; padding: 0 16px; min-height: 42px; font-family: var(--f-ui); }
+.sp-msg { flex-basis: 100%; font-size: 12px; color: var(--danger); }
+.sp-msg:empty { display: none; }
+.cell .spd { display: block; width: 100%; text-align: center; border-radius: 4px; background: var(--pink-soft); font-size: 10px; line-height: 14px; color: var(--pink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cell .spd.home { color: var(--amber); background: var(--amber-soft); }
+
+/* calendar */
+.cal-nav { display: flex; align-items: center; gap: 4px; }
+.cal-nav button { width: 30px; height: 30px; border: 0; background: none; border-radius: 8px; font-size: 15px; }
+.cal-nav button:hover:not(:disabled) { background: var(--bg); }
+.cal-nav button:disabled { opacity: .3; cursor: default; }
+.cal-title { font-size: 14px; font-weight: 700; min-width: 86px; text-align: center; font-variant-numeric: tabular-nums; }
+.cal { padding: 10px 8px 12px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.dow { text-align: center; font-size: 11px; color: var(--muted); padding-bottom: 2px; }
+.dow.sun { color: var(--danger); }
+.cell { background: none; border: 0; border-radius: 10px; padding: 6px 0 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.cell:hover:not(:disabled) { background: var(--bg); }
+.cell .n { position: relative; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-variant-numeric: tabular-nums; }
+.cell { justify-content: flex-start; }
+.cell .evs { width: 100%; display: flex; flex-direction: column; gap: 2px; padding: 0 2px; min-width: 0; }
+.cell .evc { display: block; width: 100%; min-width: 0; font-size: 10px; line-height: 15px; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 0 3px; }
+.cell .evc .evt { font-weight: 400; font-variant-numeric: tabular-nums; opacity: .75; }
+.cell .evmore { font-size: 10px; line-height: 13px; color: var(--muted); text-align: center; }
+.cell .m { height: 22px; font-size: 17px; line-height: 20px; }
+.cell .m.dot::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--done); vertical-align: middle; }
+.cell.has-ev .n::after-off { content: ""; position: absolute; top: -1px; right: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--paper); }
+.cell.written .n { background: var(--done-soft); color: var(--mint-deep); }
+.cell.today .n { box-shadow: inset 0 0 0 2px var(--mint); }
+.cell.sel .n { background: var(--ink); color: var(--paper); }
+.cell:disabled { opacity: .35; cursor: default; }
+.cell.pad { visibility: hidden; }
+.cal-sum { display: flex; flex-wrap: wrap; gap: 4px 16px; padding: 10px 14px; border-top: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.cal-sum b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.status { font-size: 12px; color: var(--muted); text-align: center; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="datebox">
+      <div class="eyebrow" id="eyebrow">펭이 다이어리</div>
+      <h1 id="h1">오늘</h1>
+    </div>
+    <div class="nav">
+      <button id="prev" aria-label="전날">‹</button>
+      <button id="todayBtn" class="today">오늘</button>
+      <button id="next" aria-label="다음날">›</button>
+    </div>
+  </header>
+
+  <div class="cheer">
+    <button type="button" class="pup" id="pup" aria-label="발레 펭귄 펭이 (기록하면 발레 동작을 해요)" title="기록하면 펭이가 발레를 해요">
+      <img class="peng flat" src="images/pengi-pose.png" width="200" height="200" alt="">
+      <img class="peng up" src="images/pengi-pointe.png" width="200" height="200" alt="">
+      <img class="peng lift" src="images/pengi-pointe-lift.png" width="200" height="200" alt="">
+    </button>
+    <div class="bubble" id="bubble" aria-live="polite"></div>
+  </div>
+
+  <section class="card" aria-labelledby="evLabel">
+    <div class="card-head">
+      <span class="label" id="evLabel">오늘 일정</span>
+      <span class="saved" id="evCount"></span>
+    </div>
+    <ul class="ev-list" id="evList"></ul>
+    <form class="ev-add" id="evForm">
+      <input id="evTime" type="time" aria-label="시간 (비워 두면 시간 없음)">
+      <input id="evText" type="text" maxlength="80" placeholder="일정 적기" autocomplete="off" aria-label="일정 내용">
+      <button type="submit">추가</button>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="spLabel">
+    <div class="card-head">
+      <span class="label" id="spLabel">오늘 쓴 돈</span>
+      <span class="sp-total" id="spTotal"></span>
+    </div>
+    <ul class="sp-list" id="spList"></ul>
+    <form class="sp-add" id="spForm">
+      <div class="sp-type" role="group" aria-label="누구 돈인지"><button type="button" class="mine" id="spMine" aria-pressed="true">my</button><button type="button" class="home" id="spHome" aria-pressed="false">생활비</button></div>
+      <input id="spText" type="text" maxlength="40" placeholder="어디에 썼나요?" autocomplete="off" aria-label="쓴 곳">
+      <input id="spAmt" type="text" inputmode="numeric" placeholder="금액(원)" autocomplete="off" aria-label="금액(원)">
+      <button type="submit">추가</button>
+      <div class="sp-msg" id="spMsg" role="alert"></div>
+    </form>
+  </section>
+
+  <section class="card" aria-labelledby="pageLabel" id="diaryCard">
+    <div class="card-head">
+      <span class="label" id="pageLabel">오늘의 일기</span>
+      <span class="saved" id="saved"></span>
+    </div>
+    <div class="future-note" id="futureNote" hidden>아직 오지 않은 날이에요. 그날이 되면 일기를 쓸 수 있어요.</div>
+    <div class="picks" id="diaryBody">
+      <div class="pick-row">
+        <span class="label">기분</span>
+        <div class="chips" id="moods" role="group" aria-label="기분 고르기"></div>
+      </div>
+      <div class="pick-row">
+        <span class="label">날씨</span>
+        <div class="chips" id="weathers" role="group" aria-label="날씨 고르기"></div>
+        <span class="pick-name" id="weatherName"></span>
+      </div>
+    </div>
+    <div class="page" id="diaryPage">
+      <input id="title" type="text" maxlength="60" placeholder="제목" autocomplete="off" aria-label="일기 제목">
+      <textarea id="body" placeholder="오늘 있었던 일을 펭이에게 들려주세요." aria-label="일기 내용"></textarea>
+    </div>
+    <div class="foot" id="diaryFoot">
+      <span class="count" id="count">0자</span>
+      <div class="foot-btns">
+        <button class="btn danger" id="delBtn" hidden>지우기</button>
+        <button class="btn primary" id="replyBtn" hidden>펭이에게 답장 받기</button>
+      </div>
+    </div>
+    <div class="confirm" id="confirm" hidden>
+      <span>이 날 일기를 지울까요? 펭이의 답장도 함께 지워져요. 일정과 쓴 돈 기록은 남아요.</span>
+      <button class="btn" id="cancelDel">취소</button>
+      <button class="btn danger" id="okDel">지우기</button>
+    </div>
+    <div class="reply" id="reply" hidden>
+      <img class="peng" src="images/pengi-pose.png" width="200" height="200" alt="">
+      <div class="reply-body">
+        <div class="reply-from">펭이의 답장</div>
+        <div class="reply-text" id="replyText"></div>
+        <div class="reply-note" id="replyNote" hidden></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" aria-labelledby="calTitle">
+    <div class="card-head">
+      <span class="label">일기장</span>
+      <div class="cal-nav">
+        <button id="calPrev" aria-label="이전 달">‹</button>
+        <span class="cal-title" id="calTitle"></span>
+        <button id="calNext" aria-label="다음 달">›</button>
+      </div>
+    </div>
+    <div class="cal" id="cal"></div>
+    <div class="cal-sum" id="calSum"></div>
+  </section>
+
+  <div class="status" id="status">불러오는 중…</div>
+  <div class="backup">
+    <button type="button" class="btn" id="exportBtn">백업 파일 저장</button>
+    <button type="button" class="btn" id="importBtn">백업 파일 불러오기</button>
+    <input type="file" id="importFile" accept="application/json,.json" hidden>
+  </div>
+  <div class="backup-msg" id="backupMsg">기록은 이 휴대폰에 저장돼요. 휴대폰을 바꾸기 전에 백업 파일을 저장해 두세요.</div>
+</div>
+
+<script>
+(function () {
+  const $ = (id) => document.getElementById(id);
+  const MOODS = [
+    { e: "😆", img: "images/face-excited.png", t: "신나요", say: "신나는 하루였군요! 무슨 일이 있었는지 궁금해요." },
+    { e: "😊", img: "images/face-good.png", t: "좋아요", say: "기분 좋은 날이네요. 좋았던 순간을 적어 둬요." },
+    { e: "😌", img: "images/face-calm.png", t: "편안해요", say: "편안한 하루였군요. 천천히 써 봐요." },
+    { e: "😐", img: "images/face-meh.png", t: "그냥 그래요", say: "그런 날도 있죠. 생각나는 것부터 적어 봐요." },
+    { e: "😴", img: "images/face-tired.png", t: "피곤해요", say: "오늘 많이 피곤했죠? 짧게 써도 괜찮아요." },
+    { e: "😰", img: "images/face-worried.png", t: "걱정돼요", say: "걱정을 글로 꺼내 놓으면 조금 가벼워져요." },
+    { e: "😢", img: "images/face-sad.png", t: "슬퍼요", say: "토닥토닥. 펭이가 끝까지 읽을게요." },
+    { e: "😠", img: "images/face-angry.png", t: "화나요", say: "화가 났군요. 여기엔 마음껏 써도 돼요." },
+  ];
+  const WEATHERS = [
+    { e: "☀️", t: "맑음" }, { e: "⛅", t: "구름 조금" }, { e: "☁️", t: "흐림" },
+    { e: "🌧️", t: "비" }, { e: "❄️", t: "눈" }, { e: "🌬️", t: "바람" },
+  ];
+  const QUESTIONS = [
+    "오늘 가장 오래 기억하고 싶은 장면은 뭐예요?",
+    "오늘 누군가에게 고마웠던 일이 있었나요?",
+    "오늘 나를 웃게 한 건 뭐였어요?",
+    "오늘 배운 것 하나를 알려 주세요.",
+    "오늘 먹은 것 중에 제일 맛있었던 건요?",
+    "내일의 나에게 한마디 해 준다면요?",
+    "오늘 조금 힘들었던 일이 있었나요?",
+    "오늘 들은 말 중에 기억나는 말이 있어요?",
+    "오늘 스스로를 칭찬해 주고 싶은 점은요?",
+    "요즘 자주 떠오르는 생각이 있나요?",
+    "오늘 창밖 풍경은 어땠어요?",
+    "오늘 한 일 중에 제일 뿌듯한 건요?",
+    "오늘 하루를 한 단어로 고른다면요?",
+    "이번 주에 기대되는 일이 있어요?",
+    "오늘 몸을 움직인 시간이 있었나요?",
+    "오늘 마음이 춤추듯 가벼웠던 순간이 있었나요?",
+  ];
+  const DOW = ["일", "월", "화", "수", "목", "금", "토"];
+  const TYPES = { mine: "my", home: "생활비" };
+  const typeOf = (v) => (v === "home" || v === "생활비" || v === "생활" ? "home" : "mine");
+  let spType = "mine";
+  const won = (n) => n.toLocaleString("ko-KR") + "원";
+  const shortWon = (n) => n >= 10000 ? (Math.round(n / 1000) / 10).toString().replace(/\.0$/, "") + "만" : n.toLocaleString("ko-KR");
+
+  const pad = (n) => String(n).padStart(2, "0");
+  const keyOf = (d) => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const parse = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d); };
+  const addDays = (k, n) => { const d = parse(k); d.setDate(d.getDate() + n); return keyOf(d); };
+  const monthOf = (k) => k.slice(0, 7);
+  const todayKey = () => keyOf(new Date());
+  const questionFor = (k) => { let h = 0; for (const c of k) h = (h * 31 + c.charCodeAt(0)) >>> 0; return QUESTIONS[h % QUESTIONS.length]; };
+
+  const state = {
+    selected: todayKey(),
+    calMonth: monthOf(todayKey()),
+    entries: {},          // "YYYY-MM-DD" -> {mood, weather, title, body, reply, replyFor}
+    mode: "loading",      // "db" | "local"
+    loaded: {},           // month -> true once the store answered
+  };
+
+  /* ---------- storage ---------- */
+  const LS = "pengi-diary-v1";
+  function loadLocal() {
+    try { const raw = localStorage.getItem(LS); if (raw) { const o = JSON.parse(raw); if (o && typeof o === "object") state.entries = o; } } catch (e) {}
+  }
+  function saveLocal() { try { localStorage.setItem(LS, JSON.stringify(state.entries)); } catch (e) {} }
+
+  let userCol = null;
+  const writers = {};
+  const subs = {};
+  function monthDays(month) {
+    const days = {};
+    for (const k of Object.keys(state.entries)) if (monthOf(k) === month) days[k] = state.entries[k];
+    return days;
+  }
+  function writerFor(month) {
+    if (writers[month]) return writers[month];
+    const w = { busy: false, dirty: false, timer: null };
+    w.flush = async () => {
+      if (w.busy) return;
+      w.busy = true; w.dirty = false;
+      try { await userCol.doc("diary-" + month).set({ days: monthDays(month) }); setSaved("저장됨"); }
+      catch (e) { setSaved("저장하지 못했어요"); }
+      w.busy = false;
+      if (w.dirty) w.flush();
+    };
+    w.schedule = () => { w.dirty = true; clearTimeout(w.timer); w.timer = setTimeout(w.flush, 700); };
+    return (writers[month] = w);
+  }
+  function save(k) {
+    setSaved("저장 중…");
+    if (state.mode === "db") writerFor(monthOf(k)).schedule();
+    else { saveLocal(); setTimeout(() => setSaved("저장됨"), 300); }
+  }
+  function watchMonth(month) {
+    if (state.mode !== "db" || subs[month]) return;
+    subs[month] = userCol.doc("diary-" + month).onSnapshot((snap) => {
+      const w = writers[month];
+      if (w && (w.busy || w.dirty)) return;
+      for (const k of Object.keys(state.entries)) if (monthOf(k) === month) delete state.entries[k];
+      if (snap.exists) {
+        const days = snap.data().days || {};
+        for (const k of Object.keys(days)) if (days[k] && typeof days[k] === "object") state.entries[k] = clean(days[k]);
+      }
+      state.loaded[month] = true;
+      const editing = document.activeElement === $("title") || document.activeElement === $("body");
+      render(!editing || monthOf(state.selected) !== month);
+    }, () => { state.loaded[month] = true; });
+  }
+  function clean(o) {
+    const s = (v) => (typeof v === "string" ? v : "");
+    const events = Array.isArray(o.events) ? o.events.filter((v) => v && typeof v.text === "string").map((v) => ({ id: String(v.id || Math.random().toString(36).slice(2)), time: s(v.time), text: v.text })) : [];
+    const spend = Array.isArray(o.spend) ? o.spend.filter((v) => v && typeof v.text === "string" && Number.isFinite(v.amount)).map((v) => ({ id: String(v.id || Math.random().toString(36).slice(2)), cat: typeOf(v.cat), text: v.text, amount: Math.max(0, Math.round(v.amount)) })) : [];
+    return { mood: s(o.mood), weather: s(o.weather), title: s(o.title), body: s(o.body), reply: s(o.reply), replyFor: s(o.replyFor), events, spend };
+  }
+
+  /* ---------- entry helpers ---------- */
+  const entry = (k) => state.entries[k] || null;
+  const isEmpty = (e) => !e || (!e.mood && !e.weather && !e.title.trim() && !e.body.trim());
+  function edit(k, patch) {
+    const e = Object.assign({ mood: "", weather: "", title: "", body: "", reply: "", replyFor: "", events: [], spend: [] }, entry(k) || {}, patch);
+    if (isEmpty(e) && !e.reply && !e.events.length && !e.spend.length) delete state.entries[k]; else state.entries[k] = e;
+    save(k);
+  }
+  function setSaved(t) { $("saved").textContent = t; }
+
+  /* ---------- render ---------- */
+  let hopTimer = null;
+  // 펭이 dances only when something is done: a mood or weather picked, a schedule or spending added,
+  // a pause after writing the diary, a reply received (or when 펭이 is tapped)
+  function hop() {
+    const p = $("pup");
+    if (p.classList.contains("play")) return;
+    p.classList.add("play");
+    hopTimer = setTimeout(() => p.classList.remove("play"), 5600);
+  }
+  // any touch or click on the page starts 펭이's move (once at a time)
+  document.addEventListener("pointerdown", hop, { passive: true });
+  let typeTimer = null;
+  const afterWriting = () => { clearTimeout(typeTimer); typeTimer = setTimeout(hop, 1500); };
+
+  function renderHeader() {
+    const d = parse(state.selected), t = todayKey();
+    $("eyebrow").textContent = "펭이 다이어리 · " + d.getFullYear() + "년";
+    $("h1").textContent = (d.getMonth() + 1) + "월 " + d.getDate() + "일 " + DOW[d.getDay()] + "요일";
+    $("next").disabled = false;
+    $("evLabel").textContent = state.selected === t ? "오늘 일정" : (d.getMonth() + 1) + "월 " + d.getDate() + "일 일정";
+    $("spLabel").textContent = state.selected === t ? "오늘 쓴 돈" : (d.getMonth() + 1) + "월 " + d.getDate() + "일에 쓴 돈";
+    $("todayBtn").disabled = state.selected === t;
+    $("pageLabel").textContent = state.selected === t ? "오늘의 일기" : (d.getMonth() + 1) + "월 " + d.getDate() + "일의 일기";
+  }
+  function renderBubble() {
+    const e = entry(state.selected), b = $("bubble");
+    if (state.selected > todayKey()) {
+      const n = e && e.events ? e.events.length : 0;
+      b.textContent = n ? "이 날 일정 " + n + "개, 펭이도 기억해 둘게요!" : "이 날 미리 적어 둘 일정이 있나요?";
+      return;
+    }
+    const mood = e && MOODS.find((m) => m.e === e.mood);
+    b.textContent = "";
+    if (mood && !(e.body.trim())) { b.textContent = mood.say; return; }
+    if (e && e.body.trim()) {
+      b.textContent = e.reply && e.replyFor === e.body ? "답장 써 뒀어요. 아래에서 읽어 봐요!" : "다 쓰면 펭이가 답장을 써 줄게요.";
+      return;
+    }
+    const q = document.createElement("span"); q.className = "q"; q.textContent = "펭이의 질문";
+    b.append(q, document.createTextNode(questionFor(state.selected)));
+  }
+  function renderChips() {
+    const e = entry(state.selected) || {};
+    const mk = (box, list, cur, field) => {
+      box.textContent = "";
+      for (const it of list) {
+        const btn = document.createElement("button");
+        btn.className = "chip"; btn.type = "button";
+        if (it.img) { const im = document.createElement("img"); im.src = it.img; im.alt = ""; im.width = 36; im.height = 36; btn.append(im); btn.classList.add("face"); }
+        else btn.textContent = it.e;
+        btn.title = it.t; btn.setAttribute("aria-label", it.t);
+        btn.setAttribute("aria-pressed", String(cur === it.e));
+        btn.addEventListener("click", () => {
+          const now = (entry(state.selected) || {})[field] === it.e ? "" : it.e;
+          edit(state.selected, { [field]: now });
+          renderChips(); renderBubble(); renderCal(); renderFoot();
+          if (now) { const sel = box.querySelector('[aria-pressed="true"]'); if (sel) sel.classList.add("pop"); hop(); }
+        });
+        box.append(btn);
+      }
+    };
+    mk($("moods"), MOODS, e.mood, "mood");
+    mk($("weathers"), WEATHERS, e.weather, "weather");
+    const w = WEATHERS.find((x) => x.e === e.weather);
+    $("weatherName").textContent = w ? w.t : "";
+  }
+  function renderPage() {
+    const e = entry(state.selected) || {};
+    $("title").value = e.title || "";
+    $("body").value = e.body || "";
+    $("body").placeholder = questionFor(state.selected) + "\n펭이에게 들려주세요.";
+  }
+  function renderFoot() {
+    const e = entry(state.selected);
+    const len = e ? [...e.body].length : 0;
+    $("count").textContent = len + "자";
+    $("delBtn").hidden = isEmpty(e) && !(e && e.reply);
+    const future = state.selected > todayKey();
+    $("futureNote").hidden = !future;
+    $("diaryBody").hidden = future; $("diaryPage").hidden = future; $("diaryFoot").hidden = future;
+    const rb = $("replyBtn");
+    rb.hidden = !sampleFn;
+    rb.disabled = replying || !e || len < 10;
+    rb.textContent = replying ? "펭이가 읽는 중…" : (e && e.reply ? "답장 다시 받기" : "펭이에게 답장 받기");
+    rb.title = len < 10 ? "열 글자 넘게 쓰면 답장을 받을 수 있어요" : "";
+    renderReply();
+  }
+  function renderReply() {
+    const e = entry(state.selected);
+    if (replying) return;
+    const has = e && e.reply;
+    $("reply").hidden = !has || state.selected > todayKey();
+    if (!has) return;
+    $("replyText").textContent = e.reply;
+    const n = $("replyNote");
+    n.hidden = e.replyFor === e.body;
+    n.textContent = "일기를 고친 뒤라 예전 내용에 대한 답장이에요.";
+  }
+  function renderCal() {
+    const [y, m] = state.calMonth.split("-").map(Number);
+    $("calTitle").textContent = y + "년 " + m + "월";
+    $("calNext").disabled = false;
+    const cal = $("cal"); cal.textContent = "";
+    DOW.forEach((d, i) => { const el = document.createElement("div"); el.className = "dow" + (i === 0 ? " sun" : ""); el.textContent = d; cal.append(el); });
+    const first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate(), t = todayKey();
+    for (let i = 0; i < first.getDay(); i++) { const p = document.createElement("div"); p.className = "cell pad"; cal.append(p); }
+    let count = 0; const monthSpend = { mine: 0, home: 0 };
+    for (let d = 1; d <= days; d++) {
+      const k = y + "-" + pad(m) + "-" + pad(d), e = entry(k), written = !isEmpty(e);
+      if (written) count++;
+      const c = document.createElement("button");
+      c.type = "button";
+      const nEv = e && e.events ? e.events.length : 0;
+      c.className = "cell" + (written ? " written" : "") + (nEv ? " has-ev" : "") + (k === t ? " today" : "") + (k === state.selected ? " sel" : "");
+            const n = document.createElement("span"); n.className = "n"; n.textContent = d;
+      const mm = document.createElement("span"); mm.className = "m";
+      if (written) {
+        const md = MOODS.find((x) => x.e === e.mood);
+        if (md) { const im = document.createElement("img"); im.src = md.img; im.alt = md.t; im.width = 22; im.height = 22; mm.append(im); }
+        else mm.classList.add("dot");
+      }
+      c.append(n, mm);
+      for (const t of ["mine", "home"]) {
+        const v = daySpend(e, t); if (!v) continue;
+        monthSpend[t] += v;
+        const sp = document.createElement("span"); sp.className = "spd" + (t === "home" ? " home" : ""); sp.textContent = shortWon(v); sp.title = TYPES[t] + " " + won(v); c.append(sp);
+      }
+      if (nEv) {
+        const box = document.createElement("span"); box.className = "evs";
+        const sorted = e.events.slice().sort((a, b) => ((a.time || "99") < (b.time || "99") ? -1 : 1));
+        for (const ev of sorted.slice(0, 2)) {
+          const chip = document.createElement("span"); chip.className = "evc";
+          if (ev.time) { const [hh, mm] = ev.time.split(":").map(Number); const tb = document.createElement("b"); tb.className = "evt"; tb.textContent = hh + (mm ? ":" + pad(mm) : "시"); chip.append(tb, document.createTextNode(" ")); }
+          chip.append(document.createTextNode(ev.text)); chip.title = (ev.time ? fmtTime(ev.time) + " " : "") + ev.text;
+          box.append(chip);
+        }
+        if (nEv > 2) { const more = document.createElement("span"); more.className = "evmore"; more.textContent = "+" + (nEv - 2); box.append(more); }
+        c.append(box);
+      }
+      c.setAttribute("aria-label", m + "월 " + d + "일" + (written ? ", 일기 있음" : "") + (nEv ? ", 일정 " + nEv + "개" : "") + (daySpend(e, "mine") ? ", my " + won(daySpend(e, "mine")) : "") + (daySpend(e, "home") ? ", 생활비 " + won(daySpend(e, "home")) : ""));
+      if (k === state.selected) c.setAttribute("aria-current", "date");
+      c.addEventListener("click", () => select(k));
+      cal.append(c);
+    }
+    // streak ending today (or yesterday if today not written yet)
+    let s = 0, k = todayKey();
+    if (isEmpty(entry(k))) k = addDays(k, -1);
+    while (!isEmpty(entry(k))) { s++; k = addDays(k, -1); }
+    const loadedNote = state.mode === "db" && !state.loaded[state.calMonth] ? " (불러오는 중)" : "";
+    const sum = $("calSum"); sum.textContent = "";
+    const part = (pre, num, post) => { const sp = document.createElement("span"); const b = document.createElement("b"); b.textContent = num; sp.append(pre, b, post); sum.append(sp); };
+    part(m + "월에 ", count + "일", " 썼어요" + loadedNote);
+    if (monthSpend.mine) part("my ", won(monthSpend.mine), "");
+    if (monthSpend.home) part("생활비 ", won(monthSpend.home), "");
+    if (s > 0) part("연속 ", s + "일", "째 쓰는 중");
+    else { const sp = document.createElement("span"); sp.textContent = "날짜를 누르면 그날 일기를 펼쳐요"; sum.append(sp); }
+  }
+  function renderEvents() {
+    const e = entry(state.selected), list = $("evList");
+    const evs = (e && e.events ? e.events.slice() : []).sort((a, b) => (a.time || "99") < (b.time || "99") ? -1 : (a.time || "99") > (b.time || "99") ? 1 : 0);
+    list.textContent = "";
+    $("evCount").textContent = evs.length ? evs.length + "개" : "";
+    if (!evs.length) { const li = document.createElement("li"); li.className = "ev-empty"; li.textContent = "적어 둔 일정이 없어요. 아래에 시간과 일정을 적어 추가하세요."; list.append(li); return; }
+    for (const ev of evs) {
+      const li = document.createElement("li");
+      const tm = document.createElement("span"); tm.className = "ev-time" + (ev.time ? "" : " none"); tm.textContent = ev.time ? fmtTime(ev.time) : "종일";
+      const tx = document.createElement("span"); tx.className = "ev-text"; tx.textContent = ev.text;
+      const del = document.createElement("button"); del.type = "button"; del.className = "ev-del"; del.textContent = "×"; del.setAttribute("aria-label", ev.text + " 일정 지우기");
+      del.addEventListener("click", () => {
+        const cur = (entry(state.selected) || {}).events || [];
+        edit(state.selected, { events: cur.filter((x) => x.id !== ev.id) });
+        renderEvents(); renderCal(); renderBubble();
+      });
+      li.append(tm, tx, del); list.append(li);
+    }
+  }
+  const daySpend = (e, t) => (e && e.spend ? e.spend.reduce((a, v) => a + (!t || v.cat === t ? v.amount : 0), 0) : 0);
+  function renderSpend() {
+    const e = entry(state.selected), list = $("spList");
+    const items = e && e.spend ? e.spend : [];
+    list.textContent = "";
+    const tot = $("spTotal"); tot.textContent = "";
+    if (items.length) {
+      for (const t of ["mine", "home"]) {
+        const v = daySpend(e, t); if (!v) continue;
+        const sp = document.createElement("span"); sp.className = "sp-cat" + (t === "home" ? " home" : ""); sp.style.marginLeft = "6px";
+        sp.textContent = TYPES[t] + " " + won(v); tot.append(sp);
+      }
+    }
+    if (!items.length) { const li = document.createElement("li"); li.className = "ev-empty"; li.textContent = "적어 둔 지출이 없어요. 아래에 쓴 곳과 금액을 적어 추가하세요."; list.append(li); return; }
+    for (const it of items) {
+      const li = document.createElement("li");
+      const ic = document.createElement("span"); ic.className = "sp-cat" + (it.cat === "home" ? " home" : ""); ic.textContent = TYPES[it.cat];
+      const tx = document.createElement("span"); tx.className = "sp-text"; tx.textContent = it.text;
+      const am = document.createElement("span"); am.className = "sp-amt"; am.textContent = won(it.amount);
+      const del = document.createElement("button"); del.type = "button"; del.className = "ev-del"; del.textContent = "×"; del.setAttribute("aria-label", it.text + " 지출 지우기");
+      del.addEventListener("click", () => {
+        const cur = (entry(state.selected) || {}).spend || [];
+        edit(state.selected, { spend: cur.filter((x) => x.id !== it.id) });
+        renderSpend(); renderCal();
+      });
+      li.append(ic, tx, am, del); list.append(li);
+    }
+  }
+  function fmtTime(t) { const [h, m] = t.split(":").map(Number); return (h < 12 ? "오전 " : "오후 ") + (h % 12 || 12) + ":" + pad(m); }
+  function render(withPage) {
+    renderHeader(); renderBubble(); renderChips(); renderEvents(); renderSpend();
+    if (withPage !== false) renderPage();
+    renderFoot(); renderCal();
+  }
+
+  function select(k) {
+    state.selected = k;
+    state.calMonth = monthOf(k);
+    $("confirm").hidden = true;
+    watchMonth(state.calMonth);
+    setSaved("");
+    render(true);
+  }
+
+  /* ---------- events ---------- */
+  $("prev").addEventListener("click", () => select(addDays(state.selected, -1)));
+  $("next").addEventListener("click", () => select(addDays(state.selected, 1)));
+  $("todayBtn").addEventListener("click", () => select(todayKey()));
+  $("calPrev").addEventListener("click", () => { const [y, m] = state.calMonth.split("-").map(Number); const d = new Date(y, m - 2, 1); state.calMonth = monthOf(keyOf(d)); watchMonth(state.calMonth); renderCal(); });
+  $("calNext").addEventListener("click", () => { const [y, m] = state.calMonth.split("-").map(Number); const d = new Date(y, m, 1); state.calMonth = monthOf(keyOf(d)); watchMonth(state.calMonth); renderCal(); });
+  $("title").addEventListener("input", () => { edit(state.selected, { title: $("title").value }); renderCal(); renderFoot(); afterWriting(); });
+  $("body").addEventListener("input", () => { edit(state.selected, { body: $("body").value }); renderCal(); renderFoot(); renderBubble(); afterWriting(); });
+  $("evForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const text = $("evText").value.trim();
+    if (!text) { $("evText").focus(); return; }
+    const cur = (entry(state.selected) || {}).events || [];
+    edit(state.selected, { events: cur.concat([{ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), time: $("evTime").value || "", text }]) });
+    $("evText").value = ""; $("evTime").value = "";
+    renderEvents(); renderCal(); renderBubble(); hop();
+    $("evText").focus();
+  });
+  const setType = (t) => { spType = t; $("spMine").setAttribute("aria-pressed", String(t === "mine")); $("spHome").setAttribute("aria-pressed", String(t === "home")); };
+  $("spMine").addEventListener("click", () => setType("mine"));
+  $("spHome").addEventListener("click", () => setType("home"));
+  $("spAmt").addEventListener("input", () => {
+    const digits = $("spAmt").value.replace(/[^0-9]/g, "").replace(/^0+(?=\d)/, "");
+    $("spAmt").value = digits ? Number(digits).toLocaleString("ko-KR") : "";
+  });
+  $("spForm").addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    const text = $("spText").value.trim();
+    const amount = Number($("spAmt").value.replace(/[^0-9]/g, ""));
+    if (!text) { $("spMsg").textContent = "어디에 썼는지 적어 주세요."; $("spText").focus(); return; }
+    if (!amount) { $("spMsg").textContent = "금액을 숫자로 적어 주세요."; $("spAmt").focus(); return; }
+    $("spMsg").textContent = "";
+    const cur = (entry(state.selected) || {}).spend || [];
+    edit(state.selected, { spend: cur.concat([{ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), cat: spType, text, amount }]) });
+    $("spText").value = ""; $("spAmt").value = "";
+    renderSpend(); renderCal(); hop();
+    $("spText").focus();
+  });
+  $("delBtn").addEventListener("click", () => { $("confirm").hidden = false; $("cancelDel").focus(); });
+  $("cancelDel").addEventListener("click", () => { $("confirm").hidden = true; });
+  $("okDel").addEventListener("click", () => {
+    const old = entry(state.selected) || {}, evs = old.events || [], sp = old.spend || [];
+    delete state.entries[state.selected];
+    if (evs.length || sp.length) edit(state.selected, { events: evs, spend: sp }); else save(state.selected);
+    $("confirm").hidden = true;
+    setSaved("지웠어요");
+    render(true);
+  });
+
+  /* ---------- 펭이's reply (asks Claude) ---------- */
+  let sampleFn = null, replying = false;
+  $("replyBtn").addEventListener("click", async () => {
+    const k = state.selected, e = entry(k);
+    if (!sampleFn || !e || replying) return;
+    replying = true; renderFoot();
+    const box = $("reply"), txt = $("replyText");
+    box.hidden = false; $("replyNote").hidden = true; txt.textContent = "펭이가 일기를 읽고 있어요…";
+    const mood = MOODS.find((m) => m.e === e.mood);
+    const prompt =
+      "너는 발레를 좋아하는 '펭이'라는 아기 펭귄이야(분홍 리본과 분홍 튜튜). 일기장 주인의 일기를 읽고 짧은 답장을 써.\n" +
+      "규칙: 해요체로 다정하게, 3~4문장. 일기 속 구체적인 내용 한두 가지를 짚어서 공감하고, 작은 응원이나 질문 하나로 끝내. " +
+      "가르치거나 충고하지 말고, 이모지는 최대 1개. 펭귄이나 발레다운 귀여운 표현(빙그르르 한 바퀴! 같은)은 가끔만. 답장 본문만 출력해.\n\n" +
+      "날짜: " + k + "\n" + (mood ? "기분: " + mood.t + "\n" : "") +
+      (e.weather ? "날씨: " + (WEATHERS.find((w) => w.e === e.weather) || {}).t + "\n" : "") +
+      (e.title ? "제목: " + e.title + "\n" : "") + "일기:\n" + e.body;
+    const bodyAtAsk = e.body;
+    try {
+      const res = await sampleFn(prompt, { modelTier: "quick", cache: false, onText: ({ text }) => { if (state.selected === k) txt.textContent = text; } });
+      const reply = (res && res.text ? res.text : "").trim();
+      if (reply) { edit(k, { reply, replyFor: bodyAtAsk }); if (state.selected === k) hop(); }
+    } catch (err) {
+      if (err && err.code === "not_granted") { sampleFn = null; }
+      if (state.selected === k) txt.textContent = err && err.code === "rate_limited" ? "펭이가 잠깐 쉬는 중이에요. 조금 뒤에 다시 눌러 주세요." : "답장을 받지 못했어요. 잠시 뒤 다시 눌러 주세요.";
+      replying = false; renderFoot(); renderBubble();
+      $("reply").hidden = false;
+      return;
+    }
+    replying = false;
+    renderFoot(); renderBubble();
+  });
+
+  /* ---------- start ---------- */
+  async function init() {
+    loadLocal();
+    render(true);
+    let db = null, user = null, id = null;
+    try {
+      if (window.claude && typeof window.claude.use === "function") {
+        window.claude.use("sample").then((s) => { sampleFn = s || null; renderFoot(); }, () => {});
+        [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+        id = user ? await user.id() : null;
+      }
+    } catch (e) { db = null; }
+    if (!db || !id) {
+      state.mode = "local";
+      $("status").textContent = "자동으로 저장돼요.";
+      render(true); return;
+    }
+    userCol = db.collection("data/users/" + id);
+    state.mode = "db";
+    const localBackup = state.entries;
+    state.entries = {};
+    const timer = setTimeout(() => { $("status").textContent = "저장소에 연결하지 못했어요. 표시된 내용이 최신이 아닐 수 있어요."; }, 10000);
+    const month = monthOf(state.selected);
+    subs[month] = userCol.doc("diary-" + month).onSnapshot((snap) => {
+      clearTimeout(timer);
+      $("status").textContent = "내 계정에 자동 저장돼요. 다른 기기에서도 볼 수 있어요.";
+      const w = writers[month];
+      if (w && (w.busy || w.dirty)) return;
+      for (const k of Object.keys(state.entries)) if (monthOf(k) === month) delete state.entries[k];
+      if (snap.exists) {
+        const days = snap.data().days || {};
+        for (const k of Object.keys(days)) if (days[k] && typeof days[k] === "object") state.entries[k] = clean(days[k]);
+      } else if (!snap.metadata.fromCache && Object.keys(localBackup).some((k) => monthOf(k) === month)) {
+        // first time signed in: move this month's browser-only entries into the account
+        for (const k of Object.keys(localBackup)) if (monthOf(k) === month) state.entries[k] = clean(localBackup[k]);
+        writerFor(month).schedule();
+      }
+      state.loaded[month] = true;
+      const editing = document.activeElement === $("title") || document.activeElement === $("body");
+      render(!editing || monthOf(state.selected) !== month);
+    }, () => {
+      clearTimeout(timer);
+      state.mode = "local"; state.entries = localBackup;
+      $("status").textContent = "계정 저장소를 쓸 수 없어 이 브라우저에만 저장해요.";
+      render(true);
+    });
+  }
+  // keep "today" correct if the page stays open past midnight
+  let lastToday = todayKey();
+  setInterval(() => { const t = todayKey(); if (t !== lastToday) { const wasToday = state.selected === lastToday; lastToday = t; if (wasToday) select(t); else render(false); } }, 60000);
+
+  /* ---------- backup ---------- */
+  $("exportBtn").addEventListener("click", () => {
+    const blob = new Blob([JSON.stringify({ app: "pengi-diary", version: 1, saved: new Date().toISOString(), entries: state.entries }, null, 1)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "펭이다이어리-백업-" + todayKey() + ".json";
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    $("backupMsg").textContent = "백업 파일을 저장했어요. (" + todayKey() + ")";
+  });
+  $("importBtn").addEventListener("click", () => $("importFile").click());
+  $("importFile").addEventListener("change", async () => {
+    const f = $("importFile").files[0]; if (!f) return;
+    try {
+      const o = JSON.parse(await f.text());
+      const src = o && o.entries && typeof o.entries === "object" ? o.entries : null;
+      if (!src) throw new Error("bad");
+      let n = 0;
+      for (const k of Object.keys(src)) if (/^\d{4}-\d{2}-\d{2}$/.test(k) && src[k] && typeof src[k] === "object") { state.entries[k] = clean(src[k]); n++; }
+      saveLocal(); render(true);
+      $("backupMsg").textContent = n + "일치 기록을 불러왔어요.";
+    } catch (e) { $("backupMsg").textContent = "펭이 다이어리 백업 파일이 아니에요. 파일을 다시 골라 주세요."; }
+    $("importFile").value = "";
+  });
+  if ("serviceWorker" in navigator) window.addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+
+  init();
+})();
+</script>
+
+</body>
+</html>

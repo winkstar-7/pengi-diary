@@ -1,0 +1,16 @@
+{
+  "name": "펭이 다이어리",
+  "short_name": "펭이 다이어리",
+  "description": "발레 펭이와 함께 쓰는 일기·일정·쓴 돈 기록",
+  "lang": "ko",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#e3f5ee",
+  "theme_color": "#fde2ed",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
