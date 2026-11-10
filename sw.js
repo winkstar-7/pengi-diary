@@ -1,5 +1,5 @@
 // 펭이 다이어리 — offline cache. Bump VERSION whenever files change.
-const VERSION = "pengi-diary-v25";
+const VERSION = "pengi-diary-v69";
 const FILES = [
   "./",
   "./fonts/Gaegu-Bold.woff2",
@@ -9,6 +9,18 @@ const FILES = [
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
+  "./images/season/season-01.png",
+  "./images/season/season-02.png",
+  "./images/season/season-03.png",
+  "./images/season/season-04.png",
+  "./images/season/season-05.png",
+  "./images/season/season-06.png",
+  "./images/season/season-07.png",
+  "./images/season/season-08.png",
+  "./images/season/season-09.png",
+  "./images/season/season-10.png",
+  "./images/season/season-11.png",
+  "./images/season/season-12.png",
   "./images/face-angry.png",
   "./images/face-calm.png",
   "./images/face-excited.png",
