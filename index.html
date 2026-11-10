@@ -715,7 +715,7 @@ form.sp-add > button { border: 0; background: var(--ink); color: var(--paper); b
     const [y, m] = state.calMonth.split("-").map(Number);
     $("calTitle").textContent = y + "년 " + m + "월";
     const SEASON = ["눈 오는 1월","따뜻한 2월","새싹 3월","벚꽃 4월","꽃 피는 5월","비 오는 6월","여름 바다 7월","휴가 8월","코스모스 9월","할로윈 10월","단풍 11월","크리스마스 12월"];
-    const si = $("calSeason"); si.src = "images/season/season-" + pad(m) + ".png"; si.alt = SEASON[m - 1] + " 옷을 입은 펭이";
+    const si = $("calSeason"); si.onerror = () => { si.onerror = null; si.src = "season-" + pad(m) + ".png"; }; si.src = "images/season/season-" + pad(m) + ".png"; si.alt = SEASON[m - 1] + " 옷을 입은 펭이";
     $("seasonWord").textContent = SEASON[m - 1];
     const EN = ["January","February","March","April","May","June","July","August","September","October","November","December"];
     const me = $("monthEn"); me.textContent = EN[m - 1]; const sm = document.createElement("small"); sm.textContent = y; me.append(sm);
