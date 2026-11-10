@@ -7,7 +7,11 @@
 <meta name="theme-color" content="#fde2ed">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" id="touchIcon" href="icons/apple-touch-icon.png">
+<script>
+  // when adding to the home screen, use this month's 펭이 as the icon
+  (function () { var m = ("0" + (new Date().getMonth() + 1)).slice(-2); var l = document.getElementById("touchIcon"); if (l) l.href = "icon-season-" + m + ".png"; })();
+</script>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="펭이 다이어리">
