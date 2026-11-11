@@ -901,6 +901,12 @@ form.sp-add > button { border: 0; background: var(--ink); color: var(--paper); b
   const hasKo = (t) => /[ㄱ-ㅎㅏ-ㅣ가-힣]/.test(t || "");
   const LANGS = { en: "English", ja: "Japanese", fr: "French" };
   async function mmTranslate(t, lang) {
+    try {
+      const g = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&sl=ko&tl=" + (lang || "en") + "&dt=t&q=" + encodeURIComponent(t));
+      const d = await g.json();
+      const o = (d && d[0] || []).map((x) => x && x[0] || "").join("").trim();
+      if (o && !hasKo(o)) return o;
+    } catch (err) {}
     const r = await fetch("https://api.mymemory.translated.net/get?q=" + encodeURIComponent(t) + "&langpair=ko|" + (lang || "en"));
     const j = await r.json();
     const o = j && j.responseData && j.responseData.translatedText;
