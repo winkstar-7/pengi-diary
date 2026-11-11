@@ -1000,7 +1000,7 @@ form.sp-add > button { border: 0; background: var(--ink); color: var(--paper); b
     if (!text) { $("evText").focus(); return; }
     const cur = (entry(state.selected) || {}).events || [];
     const nid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    edit(state.selected, { events: cur.concat([{ id: nid, time: $("evTime").value || "", text }]) }); translateEvent(state.selected, nid, text);
+    edit(state.selected, { events: cur.concat([{ id: nid, time: $("evTime").value || "", text }]) });
     $("evText").value = ""; $("evTime").value = "";
     renderEvents(); renderCal(); renderBubble(); hop();
     $("evText").focus();
@@ -1132,7 +1132,7 @@ form.sp-add > button { border: 0; background: var(--ink); color: var(--paper); b
     const cur = (entry(sheetKey) || {}).events || [];
     const must = $("sheetMust").getAttribute("aria-pressed") === "true";
     const nid = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-    edit(sheetKey, { events: cur.concat([{ id: nid, time, text, must }]) }); translateEvent(sheetKey, nid, text);
+    edit(sheetKey, { events: cur.concat([{ id: nid, time, text, must }]) });
     $("sheetEvText").value = ""; $("sheetTime").value = ""; $("sheetMust").setAttribute("aria-pressed", "false");
     refreshAfterSheetEdit(); hop();
   });

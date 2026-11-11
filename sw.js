@@ -1,5 +1,5 @@
 // 펭이 다이어리 — offline cache. Bump VERSION whenever files change.
-const VERSION = "pengi-diary-v76";
+const VERSION = "pengi-diary-v77";
 const FILES = [
   "./",
   "./fonts/Gaegu-Bold.woff2",
